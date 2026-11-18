@@ -65,6 +65,21 @@ If the user wants all known samples shown, use `show_all_samples = TRUE` and inc
 
 ## 6. Adjust aesthetics and finish
 
-Show the current plot and offer the adjustments that fit it. For example, change tile width with `ggoncoplot_options(tile_width = 0.8)`, show sample IDs with `show_sample_ids = TRUE` in the options, or toggle the marginal plots with `draw_gene_barplot` and `draw_tmb_barplot` in `ggoncoplot()`. The default TMB bar counts mutation records per sample. A mutations-per-megabase estimate needs an appropriate denominator. If the TMB plot includes zero-count samples, offer `log10_transform_tmb = FALSE` in the options. Check installed help for other options the user asks about.
+Show the current plot and offer a menu that fits the displayed panels and the user's goal. Pass the chosen styling settings through `options = ggoncoplot_options(...)`. Check the installed help for `ggoncoplot_options()` for additional settings.
+
+- **Tile width and height.** Adjust `tile_width` and `tile_height` to change the gaps between sample columns and gene rows.
+- **Marginal plot visibility.** Toggle the gene recurrence and TMB barplots independently with `draw_gene_barplot` and `draw_tmb_barplot` in `ggoncoplot()`.
+- **Relative panel sizes.** Use `plotsize_tmb_rel_height` and `plotsize_metadata_rel_height` to change how much vertical space the displayed TMB and metadata panels take up. The main mutation tile plot uses the remaining height. Use `plotsize_gene_rel_width` to change the share of horizontal space taken up by the side barplot.
+- **Overall dimensions and aspect ratio.** Set `interactive_svg_width` and `interactive_svg_height` for a wider or taller interactive canvas. For static exports, set `width` and `height` in `ggplot2::ggsave()`.
+- **Spacing between panels.** Adjust the gaps around displayed panels with `buffer_tmb`, `buffer_genebar`, and `buffer_metadata`.
+- **Sample IDs.** Show or hide them with `show_sample_ids`, move them above or below the tiles with `sample_id_position`, or adjust `sample_id_angle` and `fontsize_samples` for readability.
+- **Axis titles and label styling.** Toggle titles with `show_xlab_title` and `show_ylab_title`, edit the text with `xlab_title` and `ylab_title`, and change the size or weight of gene and sample labels with `fontsize_genes`, `fontface_genes`, and `fontface_samples`.
+- **Tile colours.** Change the fill of non-mutation tiles with `colour_backround` or adjust the mutation fill in a single-colour plot with `colour_mutation_type_unspecified`.
+- **Legends.** Toggle legends or their titles with `show_legend` and `show_legend_titles`. Adjust mutation legend columns with `ggoncoplot_guide_ncol`, swatch size with `legend_key_size`, or text size with `fontsize_legend_title` and `fontsize_legend_text`. Use `prettify_legend_titles` and `prettify_legend_values` to control whether labels are reformatted.
+- **Marginal axes and labels.** Toggle axes with `show_axis_gene` and `show_axis_tmb`. Add recurrence percentages with `show_genebar_labels` and adjust their precision with `genebar_label_round`. Offer a linear TMB axis with `log10_transform_tmb = FALSE`, especially when zero-count samples are displayed.
+- **Metadata layout.** Move annotation tracks above or below the main plot with `metadata_position` and resize their labels with `fontsize_metadata_text`. Switch numeric annotations between bars and heatmaps with `metadata_numeric_plot_type`, or arrange categorical legend rows and columns with `metadata_legend_nrow` and `metadata_legend_ncol`.
+- **Pathway labels.** When pathways are shown, adjust their label angle and text size with `pathway_text_angle` and `fontsize_pathway`, or change the strip fill and text colours with `colour_pathway_bg` and `colour_pathway_text`.
+
+The default TMB bar counts mutation records per sample. A mutations-per-megabase estimate needs an appropriate denominator.
 
 Render the requested adjustments and ask whether to revise again or finish. If the user wants a side-by-side comparison, hold the data, gene selection, and sample order fixed and save separately named interactive previews. Once the user approves the result, share the final widget and updated plotting script, plus the tidy data and preprocessing script if reshaping was required. Provide a static export when requested.
