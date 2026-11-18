@@ -1,58 +1,70 @@
 ---
 name: oncoplot
-description: Create, explain, refine, and troubleshoot interactive cancer-cohort oncoplots in R using ggoncoplot. Use for mutation tables or MAFs, preparing wide data when needed, and conversational changes to genes, samples, colours, labels, and marginal plots.
+description: Create, explain, refine, and troubleshoot interactive cancer-cohort oncoplots in R using ggoncoplot. Use for mutation tables and MAFs, including wide-to-long preparation and user-guided review of tile colours, genes, sample metadata, and layout.
 ---
 
 # Make and refine an interactive oncoplot
 
-Show one working interactive oncoplot first. Then ask what the user would like to explore and make that change through `ggoncoplot()` or `ggoncoplot_options()`. Apply any settings the user already specified on the first call.
+For a new oncoplot, work through the six stages below in order. Name the current stage and briefly explain what you are doing. Show its result in the same turn as a short question asking whether to keep it and move on or revise it. If the user wants another revision, ask what they want to change if they haven't said and offer one or two concrete suggestions when obvious. Make the requested change, show the result again, and ask again. **Advance only when the user approves the current result or explicitly asks to move on.** Honour explicit requests to skip stages or edit a specific part of an existing plot.
 
-## Keep the workflow to at most two R scripts
+After data preparation, aim for one quick render per requested revision. Offer choices based on the preview and let the user choose. Keep earlier choices as you update the same plotting script. Show the interactive widget in the conversation when supported or link the HTML. Check that it renders before sharing. If rendering is unavailable, provide runnable code and say what you could verify.
 
-Inspect the supplied data in R. Identify the sample, gene, optional mutation classification, and any variant identifier. Preserve the biological unit represented by each sample ID. Confirm ambiguous encodings or cohort definitions when they affect the result.
+## 1. Prepare the mutation data
 
-1. **Preprocessing script, only when needed.** A tidy input has one row per mutation and columns for sample and gene. A mutation-level MAF is ready to use with its original column names. Go straight to the plotting script for these inputs. If the data needs reshaping, decoding, or a requested biological filter, put those transformations in one preprocessing script and save its tidy output as a TSV or RDS. For wide inputs, pivot only the gene or sample columns and interpret non-mutation markers according to the source. See the [data recipes](references/data-recipes.md).
-2. **Plotting script.** Read the original tidy file or the saved preprocessing output. Make a single call to `ggoncoplot()` and display or save the returned widget directly. Use the user's actual paths and column names. Keep data preparation, custom ggplot layers, and edits to the widget's internals out of this script.
+- Inspect the input in R. Identify the gene and sample columns, what each sample ID represents, and any mutation classification and variant ID columns. Preserve ID strings and check for blank or missing IDs. Confirm ambiguous column mappings, cohort definitions, or cell encodings before using them.
+- A tidy table has one row per mutation and columns for sample and gene. Use an already tidy table or mutation-level MAF directly with its original column names. For wide inputs, pivot only the gene or sample columns and interpret non-mutation markers based on the source. See the [wide and long data recipes](references/data-recipes.md).
+- Check for duplicate annotations. Use a variant identifier or genomic coordinates and alleles within a sample to distinguish repeated annotations from distinct variants. Confirm how to resolve repeated annotations if the source does not establish a rule. Keep genuine variants as separate rows and preserve their original classifications.
 
-Check missing IDs and potential duplicate annotations while inspecting the input. Use the variant identifier or genomic coordinates and alleles within a sample to distinguish repeated annotations from distinct mutations. Keep genuine variants as separate rows and retain the supplied classifications. With `col_mutation_type`, ggoncoplot shows repeated sample–gene pairs as `Multi_Hit` and combines their tooltips. This label describes multiplicity regardless of allelic phase.
+Show a small preview of the ready-to-plot table, the proposed column mapping, and mutation, sample, and gene counts. Link the original file when ready as supplied. If reshaping was required, save the tidy data as TSV or RDS and share it with `tidy_data_for_oncoplot.R`, which reproduces the reshape. Ask the user to confirm the prepared data and mappings or request changes before plotting.
 
-## Make the first plot
+## 2. Render a basic interactive oncoplot
 
-For a tidy MAF, the entire plotting script can be this short.
+Read the agreed mutation data and make one call to `ggoncoplot()` with `draw_gene_barplot = TRUE`. Leave the other settings at their defaults, including interactive mode and the single mutation colour. The side bar counts the samples affected per gene. By default, samples appear if they have a mutation in a displayed gene.
+
+For a tidy MAF in a headed TSV, the plotting script can be this short.
 
 ```r
-library(ggoncoplot)
-
 mutations <- read.delim("cohort.maf.tsv")
-p <- ggoncoplot(
+p <- ggoncoplot::ggoncoplot(
   data = mutations,
   col_genes = "Hugo_Symbol",
   col_samples = "Tumor_Sample_Barcode",
-  col_mutation_type = "Variant_Classification",
-  interactive = TRUE,
-  options = ggoncoplot_options()
+  draw_gene_barplot = TRUE
 )
 htmlwidgets::saveWidget(p, "oncoplot.html", selfcontained = TRUE)
 ```
 
-Start with the package defaults for options, the ten most recurrent genes, gene-based sample ordering, and marginal plots off. The default view shows samples with a call in a displayed gene. Omit `col_mutation_type` if classification is unavailable. An existing variant column such as `Genome_Change` can go directly into `col_tooltip`. Use the package palette when possible. If it cannot colour all supplied classes, pass a complete named `palette` including `Multi_Hit`. The data recipes include a short MAF palette example.
+Use the actual paths, reader, and column names. Keep this first script to simple parsing, plotting, and widget output. Show the interactive plot and share the R script. Ask whether the baseline looks right and the user is ready to choose mutation colours, or whether they want to revisit the input or baseline.
 
-Inspect the rendered widget when execution is available. Show it in the conversation or link the self-contained HTML, and provide the script or scripts that reproduce it. Briefly report transformations, sample inclusion, and multi-hit counts when relevant. Use a static export when the user requests one. If rendering is unavailable, say what could be verified and give runnable code. Obtain permission before installing missing packages.
+## 3. Add mutation colours
 
-## Continue the conversation through the API
+If the user has yet to choose a tile colour column, propose one, such as `Variant_Classification` in a MAF. Ask whether to use it, pick another, or keep one colour. Pass the chosen column as `col_mutation_type` and try the package's automatic palette first. Check the rendered legend. If there is no usable automatic palette, apply a named, colourblind-friendly vector of hex colours via `palette`, using the actual class names. For example, `c(Missense_Mutation = "#0072B2", Nonsense_Mutation = "#D55E00", Multi_Hit = "#000000")` covers those two classes and `Multi_Hit`. Use a palette suited to the number of classes, such as Okabe–Ito for a small set.
 
-After showing the first plot, ask one short question offering a few changes relevant to what the user can see. For example, “Would you like to show the top 20 genes, see which genes come next if we leave out TTN and MUC16, or compare a couple of layouts?” Offer gene exclusions using symbols present in the data and apply them when the user chooses them.
+Cover every observed class and reserve a colour for `Multi_Hit`. With mutation colouring enabled, ggoncoplot labels repeated sample–gene pairs `Multi_Hit` and combines their tooltips. The label describes multiplicity regardless of allelic phase. If a variant identifier would help users interpret a tile, offer the existing column as `col_tooltip`.
 
-| What the user wants to explore | Change in the same plotting script |
-| --- | --- |
-| More or fewer genes, or a specific panel | Set `topn = 20` or `topn = 5`. An explicit `genes_to_include` vector takes precedence over `topn`. |
-| Recurrence after excluding particular genes | Pass exact symbols, e.g. `genes_to_ignore = c("TTN", "MUC16")`. Offer this view when a long or frequently mutated gene dominates the ranking. Let the user choose which genes matter to their question. |
-| Different mutation colours | Pass a named `palette` covering the observed classes and `Multi_Hit`. |
-| Narrower tiles or visible sample IDs | Set `options = ggoncoplot_options(tile_width = 0.8, show_sample_ids = TRUE)`. Change either setting independently. |
-| Marginal plots | Toggle `draw_gene_barplot` and `draw_tmb_barplot` independently. The side bar counts affected samples per gene. The default top bar counts mutation records per sample. A mutations-per-megabase estimate needs an appropriate denominator. |
-| All cohort samples | Set `show_all_samples = TRUE`. To include samples known only from metadata, also set `metadata_require_mutations = FALSE`. Recurrence defaults to samples with any mutation in the input. Use `total_samples = "all"` for a denominator that includes the metadata-only samples. |
-| Sample annotations or order | Supply `metadata` with one row per sample, `col_samples_metadata` for its key, and `cols_to_plot_metadata` for its annotations. Use `sample_order` or `metadata_sort_cols` to change the ordering. |
+Show the interactive plot with the chosen colours and ask whether to keep them and move on to gene selection or adjust them. If the user keeps one colour, use the baseline preview. Rerender after each requested change and repeat the question.
 
-Make these changes by editing arguments in the existing plotting script and rerunning it on the same tidy input. For appearance requests, offer a small comparison of interactive plots, such as default tiles, narrower tiles, and visible sample IDs. If the user wants the comparison, reuse the single plotting call once per named set of settings in that script. Hold the data, gene selection, and sample order fixed for an aesthetic comparison. Give each widget a distinct HTML filename, show the choices, and ask which to keep.
+## 4. Choose which genes to show
 
-Use the installed help for `ggoncoplot` and `ggoncoplot_options` to check unfamiliar arguments. If a request genuinely changes what counts as a mutation, agree on that rule and record the transformation in the optional preprocessing script.
+Show the current plot and explain that it defaults to the 10 most recurrent genes, ranked by the number of affected samples. Ask whether the user wants to keep the top 10 or try one of these changes.
+
+- **Change the number of genes.** Offer the top 10, 20, or 30 with `topn`.
+- **Exclude genes prone to frequent background mutations.** Offer examples present in the data, such as a long gene like TTN or a mucin like MUC16. For the package list, use `genes_to_ignore = somaticflags::somaticflags`. Pass exact symbols if the user wants specific exclusions. Explain that this affects the displayed ranking.
+- **Exclude mitochondrial genes.** Identify their exact symbols from the cohort's chromosome annotation or a confirmed symbol convention and pass them to `genes_to_ignore`.
+- **Show a specific gene set.** Use `genes_to_include`, which takes precedence over `topn`. Tell the user if any requested genes are absent from the input.
+
+Apply each requested change with the ggoncoplot API. Show the interactive result and ask, “Are you happy with which genes are shown, or would you like to keep iterating?” Offer plausible next changes when the user wants to continue exploring. Advance to metadata only when they are happy with the gene selection.
+
+## 5. Add sample metadata
+
+Ask whether the user has a sample- or patient-level table and which annotations they want to see. Confirm which metadata column maps to the mutation sample ID and check ID overlap in both directions. Summarise unmatched IDs. The plotting table must have one row per sample with a unique, nonmissing key. If patient-level data covers several samples per patient, confirm the patient-to-sample mapping before expanding it. Resolve conflicting or ambiguous entries with the user before plotting.
+
+Pass the agreed table as `metadata`, with `col_samples_metadata` and `cols_to_plot_metadata`. Show the interactive plot with the default annotation colours and ask whether to keep or revise them. For categorical annotations, customise `metadata_palette` as a list keyed by metadata column, with a named, colourblind-friendly vector for the levels in each column. For example, `list(Subtype = c(Basal = "#0072B2", Luminal = "#E69F00"))`. Ask which annotation or levels to adjust if unclear. Show each updated plot and ask whether to keep refining the annotation colours or move on. If the user has no metadata or chooses to skip it, advance to aesthetics.
+
+If the user wants all known samples shown, use `show_all_samples = TRUE` and include samples known only from metadata with `metadata_require_mutations = FALSE`. If the recurrence denominator should include those samples too, use `total_samples = "all"`. Use `sample_order` or `metadata_sort_cols` when the user requests a different order.
+
+## 6. Adjust aesthetics and finish
+
+Show the current plot and offer the adjustments that fit it. For example, change tile width with `ggoncoplot_options(tile_width = 0.8)`, show sample IDs with `show_sample_ids = TRUE` in the options, or toggle the marginal plots with `draw_gene_barplot` and `draw_tmb_barplot` in `ggoncoplot()`. The default TMB bar counts mutation records per sample. A mutations-per-megabase estimate needs an appropriate denominator. If the TMB plot includes zero-count samples, offer `log10_transform_tmb = FALSE` in the options. Check installed help for other options the user asks about.
+
+Render the requested adjustments and ask whether to revise again or finish. If the user wants a side-by-side comparison, hold the data, gene selection, and sample order fixed and save separately named interactive previews. Once the user approves the result, share the final widget and updated plotting script, plus the tidy data and preprocessing script if reshaping was required. Provide a static export when requested.
