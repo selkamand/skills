@@ -12,6 +12,7 @@ After data preparation, aim for one quick render per requested revision. Offer c
 ## 1. Prepare the mutation data
 
 - Inspect the input in R. Identify the gene and sample columns, what each sample ID represents, and any mutation classification and variant ID columns. Preserve ID strings and check for blank or missing IDs. Confirm ambiguous column mappings, cohort definitions, or cell encodings before using them.
+- If an existing column would clearly help users interpret a tile, such as a variant ID or protein change, propose it as the hover tooltip and ask the user to confirm it alongside the other column mappings.
 - A tidy table has one row per mutation and columns for sample and gene. Use an already tidy table or mutation-level MAF directly with its original column names. For wide inputs, pivot only the gene or sample columns and interpret non-mutation markers based on the source. See the [wide and long data recipes](references/data-recipes.md).
 - Check for duplicate annotations. Use a variant identifier or genomic coordinates and alleles within a sample to distinguish repeated annotations from distinct variants. Confirm how to resolve repeated annotations if the source does not establish a rule. Keep genuine variants as separate rows and preserve their original classifications.
 
@@ -19,7 +20,7 @@ Show a small preview of the ready-to-plot table, the proposed column mapping, an
 
 ## 2. Render a basic interactive oncoplot
 
-Read the agreed mutation data and make one call to `ggoncoplot()` with `topn = 15`. Use the package defaults for interactive mode and the single mutation colour, with marginal plots off. By default, samples appear if they have a mutation in a displayed gene.
+Read the agreed mutation data and make one call to `ggoncoplot()` with `topn = 15`. If the user confirmed a tooltip column during data preparation, pass its name as `col_tooltip` in the first call. The default tooltip shows the sample ID. Use the package defaults for interactive mode and the single mutation colour, with marginal plots off. By default, samples appear if they have a mutation in a displayed gene.
 
 For a tidy MAF in a headed TSV, the plotting script can be this short.
 
@@ -51,7 +52,7 @@ Apply each requested change with the ggoncoplot API and show the updated single-
 
 If the user has yet to choose a tile colour column, propose one, such as `Variant_Classification` in a MAF. Ask whether to use it, pick another, or keep one colour. Pass the chosen column as `col_mutation_type` and try the package's automatic palette first. Check the rendered legend. If there is no usable automatic palette, apply a named, colourblind-friendly vector of hex colours via `palette`, using the actual class names. For example, `c(Missense_Mutation = "#0072B2", Nonsense_Mutation = "#D55E00", Multi_Hit = "#000000")` covers those two classes and `Multi_Hit`. Use a palette suited to the number of classes, such as Okabe–Ito for a small set.
 
-Cover every observed class and reserve a colour for `Multi_Hit`. With mutation colouring enabled, ggoncoplot labels repeated sample–gene pairs `Multi_Hit` and combines their tooltips. The label describes multiplicity regardless of allelic phase. If a variant identifier would help users interpret a tile, offer the existing column as `col_tooltip`.
+Cover every observed class and reserve a colour for `Multi_Hit`. With mutation colouring enabled, ggoncoplot labels repeated sample–gene pairs `Multi_Hit` and combines their tooltips. The label describes multiplicity regardless of allelic phase.
 
 Keep the gene selection from the previous stage. Show the interactive plot with the chosen colours and ask whether to keep them and move on to metadata or adjust them. If the user keeps one colour, show the approved single-colour gene-selection preview. Rerender after each requested change and repeat the question.
 
