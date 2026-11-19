@@ -1,6 +1,6 @@
 ---
 name: oncoplot
-description: Create, explain, refine, and troubleshoot interactive cancer-cohort oncoplots in R using ggoncoplot. Use for mutation tables and MAFs, including wide-to-long preparation and user-guided review of tile colours, genes, sample metadata, and layout.
+description: Create, explain, refine, and troubleshoot interactive cancer-cohort oncoplots in R using ggoncoplot. Use for mutation tables and MAFs, including wide-to-long preparation and user-guided review of gene selection, tile colours, sample metadata, and layout.
 ---
 
 # Make and refine an interactive oncoplot
@@ -19,7 +19,7 @@ Show a small preview of the ready-to-plot table, the proposed column mapping, an
 
 ## 2. Render a basic interactive oncoplot
 
-Read the agreed mutation data and make one call to `ggoncoplot()` with `draw_gene_barplot = TRUE`. Leave the other settings at their defaults, including interactive mode and the single mutation colour. The side bar counts the samples affected per gene. By default, samples appear if they have a mutation in a displayed gene.
+Read the agreed mutation data and make one call to `ggoncoplot()` with `topn = 15`. Use the package defaults for interactive mode and the single mutation colour, with marginal plots off. By default, samples appear if they have a mutation in a displayed gene.
 
 For a tidy MAF in a headed TSV, the plotting script can be this short.
 
@@ -29,31 +29,31 @@ p <- ggoncoplot::ggoncoplot(
   data = mutations,
   col_genes = "Hugo_Symbol",
   col_samples = "Tumor_Sample_Barcode",
-  draw_gene_barplot = TRUE
+  topn = 15
 )
 htmlwidgets::saveWidget(p, "oncoplot.html", selfcontained = TRUE)
 ```
 
-Use the actual paths, reader, and column names. Keep this first script to simple parsing, plotting, and widget output. Show the interactive plot and share the R script. Ask whether the baseline looks right and the user is ready to choose mutation colours, or whether they want to revisit the input or baseline.
+Use the actual paths, reader, and column names. Keep this first script to simple parsing, plotting, and widget output. Show the interactive plot and share the R script. Ask whether the baseline looks right and the user is ready to review which genes are shown, or whether they want to revisit the input or baseline.
 
-## 3. Add mutation colours
+## 3. Choose which genes to show
+
+Show the single-colour plot and explain that it starts with up to 15 genes ranked by the number of affected samples. Ask whether the user wants to keep the current selection or try one of these changes. Explain the rationale and how each suggested exclusion would work before asking them to choose.
+
+- **Change the number of genes.** Keep 15 or try a different count, such as 10, 20, or 30, with `topn`.
+- **Exclude genes prone to frequent background mutations.** Explain that long genes such as TTN and some mucins such as MUC16 can accumulate passenger mutations and take up spots in a recurrence ranking. The `somaticflags` R package collects symbols flagged in published studies as potential sources of background recurrence. Report the number of unique symbols in the installed list with `length(unique(somaticflags::somaticflags))` (138 in version 0.1.0) and how many match the cohort. If the user chooses this filter, intersect the package list with the input gene symbols and pass the matches to `genes_to_ignore` so the plot ranks the remaining genes. Offer exact symbols if the user wants to exclude specific genes.
+- **Exclude mitochondrial-genome genes.** Explain that excluding these genes can make room for more nuclear genes in the recurrence ranking when the analysis focuses on nuclear cancer genes. Identify genes encoded by mitochondrial DNA using the cohort's chromosome annotation or a confirmed gene symbol convention. Summarise which ones occur in the cohort and pass their exact symbols to `genes_to_ignore` if the user chooses this filter.
+- **Show a specific gene set.** Use `genes_to_include`, which takes precedence over `topn`. Tell the user if any requested genes are absent from the input.
+
+Apply each requested change with the ggoncoplot API and show the updated single-colour interactive plot. Ask, “Are you happy with which genes are shown, or would you like to keep iterating?” Offer plausible next changes when the user wants to continue exploring. Advance to mutation colours once the user approves the gene selection or asks to move on.
+
+## 4. Add mutation colours
 
 If the user has yet to choose a tile colour column, propose one, such as `Variant_Classification` in a MAF. Ask whether to use it, pick another, or keep one colour. Pass the chosen column as `col_mutation_type` and try the package's automatic palette first. Check the rendered legend. If there is no usable automatic palette, apply a named, colourblind-friendly vector of hex colours via `palette`, using the actual class names. For example, `c(Missense_Mutation = "#0072B2", Nonsense_Mutation = "#D55E00", Multi_Hit = "#000000")` covers those two classes and `Multi_Hit`. Use a palette suited to the number of classes, such as Okabe–Ito for a small set.
 
 Cover every observed class and reserve a colour for `Multi_Hit`. With mutation colouring enabled, ggoncoplot labels repeated sample–gene pairs `Multi_Hit` and combines their tooltips. The label describes multiplicity regardless of allelic phase. If a variant identifier would help users interpret a tile, offer the existing column as `col_tooltip`.
 
-Show the interactive plot with the chosen colours and ask whether to keep them and move on to gene selection or adjust them. If the user keeps one colour, use the baseline preview. Rerender after each requested change and repeat the question.
-
-## 4. Choose which genes to show
-
-Show the current plot and explain that it defaults to the 10 most recurrent genes, ranked by the number of affected samples. Ask whether the user wants to keep the top 10 or try one of these changes.
-
-- **Change the number of genes.** Offer the top 10, 20, or 30 with `topn`.
-- **Exclude genes prone to frequent background mutations.** Offer examples present in the data, such as a long gene like TTN or a mucin like MUC16. For the package list, use `genes_to_ignore = somaticflags::somaticflags`. Pass exact symbols if the user wants specific exclusions. Explain that this affects the displayed ranking.
-- **Exclude mitochondrial genes.** Identify their exact symbols from the cohort's chromosome annotation or a confirmed symbol convention and pass them to `genes_to_ignore`.
-- **Show a specific gene set.** Use `genes_to_include`, which takes precedence over `topn`. Tell the user if any requested genes are absent from the input.
-
-Apply each requested change with the ggoncoplot API. Show the interactive result and ask, “Are you happy with which genes are shown, or would you like to keep iterating?” Offer plausible next changes when the user wants to continue exploring. Advance to metadata only when they are happy with the gene selection.
+Keep the gene selection from the previous stage. Show the interactive plot with the chosen colours and ask whether to keep them and move on to metadata or adjust them. If the user keeps one colour, show the approved single-colour gene-selection preview. Rerender after each requested change and repeat the question.
 
 ## 5. Add sample metadata
 
@@ -68,7 +68,7 @@ If the user wants all known samples shown, use `show_all_samples = TRUE` and inc
 Show the current plot and offer a menu that fits the displayed panels and the user's goal. Pass the chosen styling settings through `options = ggoncoplot_options(...)`. Check the installed help for `ggoncoplot_options()` for additional settings.
 
 - **Tile width and height.** Adjust `tile_width` and `tile_height` to change the gaps between sample columns and gene rows.
-- **Marginal plot visibility.** Toggle the gene recurrence and TMB barplots independently with `draw_gene_barplot` and `draw_tmb_barplot` in `ggoncoplot()`.
+- **Marginal plot visibility.** Toggle the gene recurrence and TMB barplots independently with `draw_gene_barplot` and `draw_tmb_barplot` in `ggoncoplot()`. The gene barplot counts affected samples per gene.
 - **Relative panel sizes.** Use `plotsize_tmb_rel_height` and `plotsize_metadata_rel_height` to change how much vertical space the displayed TMB and metadata panels take up. The main mutation tile plot uses the remaining height. Use `plotsize_gene_rel_width` to change the share of horizontal space taken up by the side barplot.
 - **Overall dimensions and aspect ratio.** Set `interactive_svg_width` and `interactive_svg_height` for a wider or taller interactive canvas. For static exports, set `width` and `height` in `ggplot2::ggsave()`.
 - **Spacing between panels.** Adjust the gaps around displayed panels with `buffer_tmb`, `buffer_genebar`, and `buffer_metadata`.
