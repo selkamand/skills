@@ -12,7 +12,7 @@ A collection of skills that aim to:
 
 ## Installation
 
-Skills live in [`skills/`](skills/). Each skill has its own folder containing `SKILL.md` and any supporting files. The installer copies these folders to `~/.agents/skills/` by default.
+Skills are grouped under [`skills/`](skills/) into [data visualisation](skills/datavis/) and [software development](skills/softwaredevelopment/). Each skill has its own folder containing `SKILL.md` and any supporting files. The installer copies each skill folder directly into `~/.agents/skills/` by default.
 
 **Automatic Installation:**
 
@@ -36,10 +36,10 @@ To install a skill from a local copy of this repository, copy its whole folder s
 
 ```bash
 mkdir -p ~/.agents/skills
-cp -R skills/r-ggoncoplot ~/.agents/skills/
+cp -R skills/datavis/oncoplot ~/.agents/skills/
 ```
 
-The [oncoplot skill](skills/r-ggoncoplot/SKILL.md) will then be at `~/.agents/skills/r-ggoncoplot/SKILL.md`. For a project-specific installation, copy the folder to that project's `.agents/skills/` directory instead.
+The [oncoplot skill](skills/datavis/oncoplot/SKILL.md) will then be at `~/.agents/skills/oncoplot/SKILL.md`. For a project-specific installation, copy the folder to that project's `.agents/skills/` directory instead.
 
 </details>
 
