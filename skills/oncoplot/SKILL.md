@@ -5,7 +5,7 @@ description: Create, explain, refine, and troubleshoot interactive cancer-cohort
 
 # Make and refine an interactive oncoplot
 
-For a new oncoplot, work through the six stages below in order. Name the current stage and briefly explain what you are doing. Show its result in the same turn as a short question asking whether to keep it and move on or revise it. If the user wants another revision, ask what they want to change if they haven't said and offer one or two concrete suggestions when obvious. Make the requested change, show the result again, and ask again. **Advance only when the user approves the current result or explicitly asks to move on.** Honour explicit requests to skip stages or edit a specific part of an existing plot.
+For a new oncoplot, work through the seven stages below in order. Name the current stage and briefly explain what you are doing. Show its result in the same turn as a short question asking whether to keep it and move on or revise it. If the user wants another revision, ask what they want to change if they haven't said and offer one or two concrete suggestions when obvious. Make the requested change, show the result again, and ask again. **Advance only when the user approves the current result or explicitly asks to move on.** Honour explicit requests to skip stages or edit a specific part of an existing plot.
 
 After data preparation, aim for one quick render per requested revision. Offer choices based on the preview and let the user choose. Keep earlier choices as you update the same plotting script. Show the interactive widget in the conversation when supported or link the HTML. Check that it renders before sharing. If rendering is unavailable, provide runnable code and say what you could verify.
 
@@ -66,14 +66,14 @@ For categorical annotations, customise `metadata_palette` as a list keyed by met
 
 If the user wants all known samples shown, use `show_all_samples = TRUE` and include samples known only from metadata with `metadata_require_mutations = FALSE`. If the recurrence denominator should include those samples too, use `total_samples = "all"`. Use `sample_order` or `metadata_sort_cols` when the user requests a different order.
 
-## 6. Adjust aesthetics and finish
+## 6. Adjust aesthetics
 
 Show the current plot and offer a menu that fits the displayed panels and the user's goal. Pass the chosen styling settings through `options = ggoncoplot_options(...)`. Check the installed help for `ggoncoplot_options()` for additional settings.
 
 - **Tile width and height.** Adjust `tile_width` and `tile_height` to change the gaps between sample columns and gene rows.
 - **Marginal plot visibility.** Toggle the gene recurrence and TMB barplots independently with `draw_gene_barplot` and `draw_tmb_barplot` in `ggoncoplot()`. The gene barplot counts affected samples per gene.
 - **Relative panel sizes.** Use `plotsize_tmb_rel_height` and `plotsize_metadata_rel_height` to change how much vertical space the displayed TMB and metadata panels take up. The main mutation tile plot uses the remaining height. Use `plotsize_gene_rel_width` to change the share of horizontal space taken up by the side barplot.
-- **Overall dimensions and aspect ratio.** Set `interactive_svg_width` and `interactive_svg_height` for a wider or taller interactive canvas. For static exports, set `width` and `height` in `ggplot2::ggsave()`.
+- **Overall dimensions and aspect ratio.** Set `interactive_svg_width` and `interactive_svg_height` for a wider or taller interactive canvas. Use the approved canvas proportions for exports.
 - **Spacing between panels.** Adjust the gaps around displayed panels with `buffer_tmb`, `buffer_genebar`, and `buffer_metadata`.
 - **Sample IDs.** Show or hide them with `show_sample_ids`, move them above or below the tiles with `sample_id_position`, or adjust `sample_id_angle` and `fontsize_samples` for readability.
 - **Axis titles and label styling.** Toggle titles with `show_xlab_title` and `show_ylab_title`, edit the text with `xlab_title` and `ylab_title`, and change the size or weight of gene and sample labels with `fontsize_genes`, `fontface_genes`, and `fontface_samples`.
@@ -85,4 +85,17 @@ Show the current plot and offer a menu that fits the displayed panels and the us
 
 The default TMB bar counts mutation records per sample. A mutations-per-megabase estimate needs an appropriate denominator.
 
-Render the requested adjustments and ask whether to revise again or finish. If the user wants a side-by-side comparison, hold the data, gene selection, and sample order fixed and save separately named interactive previews. Once the user approves the result, share the final widget and updated plotting script, plus the tidy data and preprocessing script if reshaping was required. Provide a static export when requested.
+Render the requested adjustments and ask whether to revise again or move on to export. If the user wants a side-by-side comparison, hold the data, gene selection, and sample order fixed and save separately named interactive previews.
+
+## 7. Export results
+
+Ask the user what formats they want to save the plot as. 
+
+- **Self-contained interactive HTML.** Save the approved widget as a single `.html` file with `htmlwidgets::saveWidget(widget, file, selfcontained = TRUE)`.
+- **PNG or TIFF at 300 DPI.** Convert the approved SVG once with `rsvg::rsvg_png()`, with pixel dimensions equal to the export dimensions in inches times 300, rounded to whole pixels. Read the bitmap with `magick::image_read()` and write each requested format with `magick::image_write(density = "300x300")` to set the print resolution.
+- **Vector PDF.** Convert the same SVG with `rsvg::rsvg_pdf()`, using page dimensions in points (72 points per inch).
+
+Record the export calls in the plotting script. 
+
+Link each requested export and ask whether the user wants another format or size. 
+If the user skips exports, link the approved interactive preview. Include the updated plotting script and any tidy data and preprocessing script from stage 1.
