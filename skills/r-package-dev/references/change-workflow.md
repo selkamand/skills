@@ -17,7 +17,7 @@
 
 ## Code comments
 
-- Write comments like a person explaining a decision to a teammate. Use short, ordinary words. Explain why the code takes a non-obvious path or why a tempting alternative fails; avoid repeating what the next line already says. State only reasons supported by the code, the user's stated intent, or a focused check. If the reason is unknown, do not invent one.
+- Apply the [comment skill](../../comment/SKILL.md) whenever writing or changing R code. Check associated comments, capture verified rationale, and flag material gaps both in the code and in the handoff.
 - Before finishing any new or rewritten code comments, ask an independent second agent with less context about the codebase and language to read the comment with only the nearby code. Ask it to explain the comment in its own words and identify anything unclear. Do not give it your intended interpretation first. Revise comments it cannot understand without guessing.
 - Separately from that readability pass, check each comment against the actual code path, tests, and stated requirement. Confirm that every claim is true and that the comment describes the real reason for the decision. Remove or correct inaccurate comments even if the second agent found them easy to read. If a second agent is unavailable, report that the readability pass could not be completed.
 
